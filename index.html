@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0e27" />
+<title>Amino Acid Profile Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-1: #060818;
+    --bg-2: #161336;
+    --bg-3: #2a1457;
+    --cyan: #22d3ee;
+    --violet: #a78bfa;
+    --pink: #f472b6;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --text: #f8fafc;
+    --text-dim: #a1a1bd;
+    --text-muted: #6b6b87;
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-2: rgba(255, 255, 255, 0.09);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --glass-border-strong: rgba(255, 255, 255, 0.22);
+    --tile-bg: rgba(20, 18, 50, 0.75);
+    --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.25);
+    --shadow-pop: 0 16px 50px rgba(0, 0, 0, 0.45);
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    min-height: 100dvh;
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+    overflow-x: hidden;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Animated atmospheric blobs */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    width: 60vmax;
+    height: 60vmax;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.45;
+    z-index: 0;
+    pointer-events: none;
+    will-change: transform;
+  }
+  body::before {
+    background: radial-gradient(circle, var(--violet), transparent 70%);
+    top: -25vmax;
+    left: -25vmax;
+    animation: drift1 26s ease-in-out infinite;
+  }
+  body::after {
+    background: radial-gradient(circle, var(--cyan), transparent 70%);
+    bottom: -25vmax;
+    right: -25vmax;
+    animation: drift2 32s ease-in-out infinite;
+  }
+  @keyframes drift1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(8vmax, 6vmax) scale(1.08); }
+  }
+  @keyframes drift2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-7vmax, -5vmax) scale(1.06); }
+  }
+
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 56px 56px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--glass);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-mark {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--cyan), var(--violet) 60%, var(--pink));
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 8px 26px rgba(167, 139, 250, 0.55), inset 0 1px 0 rgba(255,255,255,0.4);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .brand-text { min-width: 0; }
+  .brand-text h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .brand-text p {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stats { display: flex; gap: 8px; }
+  .stat {
+    text-align: center;
+    padding: 6px 11px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    min-width: 52px;
+  }
+  .stat-value {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1;
+    font-family: 'JetBrains Mono', monospace;
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+    font-weight: 600;
+  }
+
+  /* Stage */
+  .stage {
+    background: var(--glass);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 18px 20px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+  }
+  .stage::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top, rgba(167, 139, 250, 0.08), transparent 60%);
+    pointer-events: none;
+  }
+  .stage-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .stage-name {
+    font-size: clamp(28px, 7vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    background: linear-gradient(135deg, #67e8f9 0%, var(--violet) 50%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.05;
+  }
+  .stage-three {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .progress {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink));
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 2px;
+  }
+
+  /* Drop zones */
+  .drop-zones {
+    display: grid;
+    grid-template-columns: 0.85fr 1.4fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 620px) {
+    .drop-zones { grid-template-columns: 1fr 1fr; }
+    .drop-zones .drop-zone[data-type="structure"] { grid-column: 1 / -1; order: -1; }
+  }
+  .drop-zone {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px dashed var(--glass-border);
+    border-radius: 16px;
+    padding: 10px 12px 12px;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    transition: border-color 0.25s, background 0.25s, transform 0.2s, box-shadow 0.3s;
+    position: relative;
+  }
+  .drop-zone-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    font-weight: 600;
+    flex: 0 0 auto;
+  }
+  .drop-zone-content {
+    flex: 1 1 auto;
+    width: 100%;
+    display: grid;
+    place-items: center;
+    min-height: 60px;
+    position: relative;
+  }
+  .drop-zone-placeholder {
+    font-size: 30px;
+    color: rgba(255,255,255,0.14);
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .drop-zone.drag-over {
+    border-color: var(--cyan);
+    background: rgba(34, 211, 238, 0.08);
+    transform: scale(1.02);
+    box-shadow: 0 0 28px rgba(34, 211, 238, 0.22);
+  }
+  .drop-zone.filled {
+    border-style: solid;
+    border-color: var(--glass-border-strong);
+    background: var(--glass-2);
+  }
+  .drop-zone.correct {
+    border-color: var(--emerald);
+    background: rgba(52, 211, 153, 0.10);
+    box-shadow: 0 0 32px rgba(52, 211, 153, 0.30);
+    animation: pulseOk 0.6s ease;
+  }
+  .drop-zone.incorrect {
+    border-color: var(--rose);
+    background: rgba(251, 113, 133, 0.10);
+    box-shadow: 0 0 32px rgba(251, 113, 133, 0.30);
+    animation: shake 0.5s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(4px); }
+  }
+  @keyframes pulseOk {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+  }
+
+  /* Tile bank */
+  .bank {
+    background: var(--glass);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: var(--shadow-soft);
+    flex: 1 1 auto;
+    min-height: 200px;
+  }
+  .bank-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .bank-title {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-weight: 600;
+  }
+  .bank-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+  }
+  @media (min-width: 540px) {
+    .tiles-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+  }
+
+  .tile {
+    background: var(--tile-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 13px;
+    padding: 9px 6px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    text-align: center;
+    transition: transform 0.18s ease, box-shadow 0.2s, background 0.2s, border-color 0.2s;
+    touch-action: none;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.06), transparent 50%, rgba(167, 139, 250, 0.06));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .tile:hover { transform: translateY(-2px); border-color: var(--glass-border-strong); box-shadow: 0 10px 24px rgba(0,0,0,0.3); }
+  .tile:hover::before { opacity: 1; }
+  .tile:active { cursor: grabbing; }
+  .tile.dragging { opacity: 0.25; }
+  .tile.placed-tile { cursor: pointer; }
+
+  .tile-letter {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-family: 'JetBrains Mono', monospace;
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tile-pkr {
+    font-size: 19px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--amber);
+  }
+  .tile-pkr-na {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .tile-structure { width: 100%; height: 56px; display: grid; place-items: center; color: var(--text); }
+  .tile-structure svg { width: 100%; height: 100%; max-width: 130px; }
+
+  /* Drop zone shows tile content scaled up */
+  .drop-zone .tile-letter { font-size: 38px; }
+  .drop-zone .tile-pkr { font-size: 22px; }
+  .drop-zone .tile-pkr-na { font-size: 15px; }
+  .drop-zone .tile-structure { height: 70px; }
+  .drop-zone .tile-structure svg { max-width: 200px; }
+
+  /* Drag clone — floating element while moving */
+  .drag-clone {
+    position: fixed;
+    z-index: 999;
+    pointer-events: none;
+    background: var(--tile-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border-strong);
+    border-radius: 13px;
+    padding: 9px 6px;
+    min-width: 110px;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: var(--shadow-pop), 0 0 24px rgba(34, 211, 238, 0.25);
+    transform: translate(-50%, -50%) scale(1.08) rotate(-1deg);
+    transition: none;
+  }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+  }
+  .btn {
+    padding: 14px 18px;
+    border: none;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.2s, background 0.2s;
+    color: var(--text);
+    letter-spacing: 0.01em;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    box-shadow: 0 10px 30px rgba(167, 139, 250, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(167, 139, 250, 0.5), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .btn-ghost {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .btn-ghost:hover { background: var(--glass-2); border-color: var(--glass-border-strong); }
+
+  /* Feedback toast */
+  .feedback {
+    position: fixed;
+    bottom: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(140%);
+    background: rgba(12, 10, 35, 0.92);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid var(--glass-border-strong);
+    border-radius: 16px;
+    padding: 14px 22px;
+    z-index: 100;
+    transition: transform 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    max-width: calc(100% - 40px);
+    text-align: center;
+    pointer-events: none;
+    box-shadow: var(--shadow-pop);
+  }
+  .feedback.show { transform: translateX(-50%) translateY(0); }
+  .feedback.success {
+    border-color: var(--emerald);
+    box-shadow: var(--shadow-pop), 0 0 50px rgba(52, 211, 153, 0.4);
+  }
+  .feedback.error {
+    border-color: var(--rose);
+    box-shadow: var(--shadow-pop), 0 0 50px rgba(251, 113, 133, 0.4);
+  }
+  .feedback-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .feedback-detail {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* No-select on the whole game while dragging */
+  body.is-dragging * { user-select: none !important; -webkit-user-select: none !important; }
+  body.is-dragging { cursor: grabbing; }
+
+  /* Mastery dots in the brand area (subtle) */
+  .mastery-dots { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+  .mastery-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .mastery-dot.lit {
+    background: var(--emerald);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.7);
+  }
+  .mastery-dot.struggling {
+    background: var(--rose);
+    box-shadow: 0 0 6px rgba(251, 113, 133, 0.6);
+  }
+
+  /* Reset button corner */
+  .reset-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    padding: 4px;
+    font-family: inherit;
+  }
+  .reset-link:hover { color: var(--rose); }
+
+  /* Hide tile when in bank but placed in zone */
+  .tile.is-hidden { visibility: hidden; pointer-events: none; }
+
+  /* Screen-reader only */
+  .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<div class="grid-overlay" aria-hidden="true"></div>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">α</div>
+      <div class="brand-text">
+        <h1>Amino Acid Profile</h1>
+        <p>Memorize all 20 standard amino acids</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat" title="Consecutive correct profiles">
+        <div class="stat-value" id="streak">0</div>
+        <div class="stat-label">Streak</div>
+      </div>
+      <div class="stat" title="Amino acids you have mastered (3+ in a row)">
+        <div class="stat-value" id="mastered">0<span style="opacity:0.4">/20</span></div>
+        <div class="stat-label">Mastered</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="stage" aria-live="polite">
+    <div class="stage-label">Build the profile of</div>
+    <div class="stage-name" id="aaName">—</div>
+    <div class="stage-three" id="aaThree">—</div>
+    <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar" style="width: 0%"></div></div>
+  </section>
+
+  <section class="drop-zones" id="dropZones" aria-label="Profile attributes">
+    <div class="drop-zone" data-type="letter">
+      <div class="drop-zone-label">1-Letter</div>
+      <div class="drop-zone-content"><span class="drop-zone-placeholder">?</span></div>
+    </div>
+    <div class="drop-zone" data-type="structure">
+      <div class="drop-zone-label">Side Chain (R group)</div>
+      <div class="drop-zone-content"><span class="drop-zone-placeholder">?</span></div>
+    </div>
+    <div class="drop-zone" data-type="pkr">
+      <div class="drop-zone-label">pKr Value</div>
+      <div class="drop-zone-content"><span class="drop-zone-placeholder">?</span></div>
+    </div>
+  </section>
+
+  <section class="bank" aria-label="Tile bank">
+    <div class="bank-header">
+      <div class="bank-title">Drag tiles into the profile</div>
+      <div class="bank-hint" id="bankHint">9 tiles • 3 correct</div>
+    </div>
+    <div class="tiles-grid" id="bank"></div>
+  </section>
+
+  <div class="controls">
+    <button class="btn btn-ghost" id="skipBtn" type="button">Skip</button>
+    <button class="btn btn-primary" id="checkBtn" type="button" disabled>Check Answer</button>
+  </div>
+
+  <div style="display:flex; justify-content:center; padding-top:4px;">
+    <button class="reset-link" id="resetBtn" type="button">Reset progress</button>
+  </div>
+</div>
+
+<div class="feedback" id="feedback" role="status" aria-live="polite">
+  <div class="feedback-title" id="feedbackTitle"></div>
+  <div class="feedback-detail" id="feedbackDetail"></div>
+</div>
+
+<script>
+/* =========================================================================
+   AMINO ACID DATA
+   pKr values follow standard medical biochemistry consensus
+   (Lehninger / Harper / Lippincott references)
+   ========================================================================= */
+
+/* Side-chain (R group) SVGs.
+   Convention: viewBox 0 0 220 110.
+   Left edge of each diagram represents the bond connecting to the alpha carbon.
+   stroke="currentColor" lets the structure inherit the surrounding text color.
+*/
+const STRUCT_VIEWBOX = '0 0 220 110';
+const SVG_OPEN = `<svg viewBox="${STRUCT_VIEWBOX}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">`;
+const SVG_LBL_OPEN = `</g><g fill="currentColor" font-family="'JetBrains Mono', monospace" font-size="15" font-weight="600" text-anchor="middle">`;
+const SVG_CLOSE = `</g></svg>`;
+
+const STRUCTURES = {
+
+  // Glycine -- side chain is just H
+  G: SVG_OPEN +
+    `<line x1="20" y1="55" x2="60" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="80" y="60">H</text>` +
+    SVG_CLOSE,
+
+  // Alanine -- methyl
+  A: SVG_OPEN +
+    `<line x1="20" y1="55" x2="60" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="92" y="60">CH₃</text>` +
+    SVG_CLOSE,
+
+  // Valine -- isopropyl  Cα—CH(CH3)2
+  V: SVG_OPEN +
+    `<line x1="20" y1="55" x2="60" y2="55"/>` +
+    `<line x1="60" y1="55" x2="92" y2="36"/>` +
+    `<line x1="60" y1="55" x2="92" y2="74"/>` +
+    SVG_LBL_OPEN +
+    `<text x="124" y="40">CH₃</text>` +
+    `<text x="124" y="78">CH₃</text>` +
+    SVG_CLOSE,
+
+  // Leucine -- Cα—CH2—CH(CH3)2
+  L: SVG_OPEN +
+    `<polyline points="20,55 50,38 80,55"/>` +
+    `<line x1="80" y1="55" x2="112" y2="36"/>` +
+    `<line x1="80" y1="55" x2="112" y2="74"/>` +
+    SVG_LBL_OPEN +
+    `<text x="144" y="40">CH₃</text>` +
+    `<text x="144" y="78">CH₃</text>` +
+    SVG_CLOSE,
+
+  // Isoleucine -- Cα—CH(CH3)—CH2—CH3
+  I: SVG_OPEN +
+    `<line x1="20" y1="55" x2="50" y2="38"/>` +
+    `<line x1="50" y1="38" x2="50" y2="20"/>` +
+    `<line x1="50" y1="38" x2="80" y2="55"/>` +
+    `<line x1="80" y1="55" x2="110" y2="38"/>` +
+    SVG_LBL_OPEN +
+    `<text x="50" y="13">CH₃</text>` +
+    `<text x="142" y="42">CH₃</text>` +
+    SVG_CLOSE,
+
+  // Proline -- cyclic; side chain forms 5-ring with backbone N
+  // We show the full pyrrolidine ring with N labelled (only AA where the side chain joins back to the alpha-N)
+  P: SVG_OPEN +
+    `<polygon points="60,28 36,46 46,76 76,76 86,46"/>` +
+    SVG_LBL_OPEN +
+    `<text x="60" y="22" font-size="14">N</text>` +
+    `<text x="60" y="100" font-size="10" fill="rgba(255,255,255,0.45)">(joins backbone N)</text>` +
+    SVG_CLOSE,
+
+  // Phenylalanine -- Cα—CH2—C6H5
+  F: (() => {
+    const cx = 130, cy = 55, r = 22;
+    // hexagon vertices at 0°,60°,...
+    const v = [];
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3;
+      v.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+    }
+    return SVG_OPEN +
+      `<line x1="20" y1="55" x2="50" y2="38"/>` +
+      // bond from CH2 to leftmost vertex of ring (which is at angle 180°)
+      `<line x1="50" y1="38" x2="${cx - r}" y2="${cy}"/>` +
+      `<polygon points="${v.join(' ')}"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="${r * 0.6}"/>` +
+      SVG_CLOSE;
+  })(),
+
+  // Tyrosine -- Cα—CH2—C6H4—OH (para)
+  Y: (() => {
+    const cx = 120, cy = 55, r = 22;
+    const v = [];
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3;
+      v.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+    }
+    return SVG_OPEN +
+      `<line x1="20" y1="55" x2="50" y2="38"/>` +
+      `<line x1="50" y1="38" x2="${cx - r}" y2="${cy}"/>` +
+      `<polygon points="${v.join(' ')}"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="${r * 0.6}"/>` +
+      `<line x1="${cx + r}" y1="${cy}" x2="${cx + r + 14}" y2="${cy}"/>` +
+      SVG_LBL_OPEN +
+      `<text x="${cx + r + 26}" y="${cy + 5}">OH</text>` +
+      SVG_CLOSE;
+  })(),
+
+  // Tryptophan -- indole (benzene fused with pyrrole containing N-H)
+  // 5-ring on left with N at top, 6-ring fused on right.
+  W: (() => {
+    // 5-ring vertices (carefully placed for clean fused look)
+    // Pyrrole positioned with N up top
+    const pyr = [
+      [60, 70],   // C (CH2 connects here)
+      [50, 48],   // C
+      [70, 30],   // N
+      [94, 38],   // C (shared with benzene, top)
+      [94, 64]    // C (shared with benzene, bottom)
+    ];
+    // Benzene ring shares the right edge (94,38)-(94,64)
+    const bz = [
+      [94, 38],
+      [115, 26],
+      [136, 38],
+      [136, 64],
+      [115, 76],
+      [94, 64]
+    ];
+    return SVG_OPEN +
+      // CH2 to ring
+      `<line x1="20" y1="55" x2="50" y2="78"/>` +
+      `<line x1="50" y1="78" x2="${pyr[0][0]}" y2="${pyr[0][1]}"/>` +
+      // pyrrole polygon
+      `<polygon points="${pyr.map(p => p.join(',')).join(' ')}"/>` +
+      // benzene
+      `<polygon points="${bz.map(p => p.join(',')).join(' ')}"/>` +
+      // aromatic indicator on benzene
+      `<circle cx="115" cy="51" r="11"/>` +
+      SVG_LBL_OPEN +
+      `<text x="70" y="24" font-size="14">N</text>` +
+      `<text x="70" y="13" font-size="11">H</text>` +
+      SVG_CLOSE;
+  })(),
+
+  // Methionine -- Cα—CH2—CH2—S—CH3
+  // Heteroatom S placed inline; flanking bonds stop short of the label.
+  M: SVG_OPEN +
+    `<polyline points="20,55 50,38 80,55"/>` +
+    `<line x1="80" y1="55" x2="103" y2="42"/>` +
+    `<line x1="125" y1="42" x2="148" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="114" y="46">S</text>` +
+    `<text x="180" y="60">CH₃</text>` +
+    SVG_CLOSE,
+
+  // Serine -- Cα—CH2—OH
+  S: SVG_OPEN +
+    `<polyline points="20,55 50,38 80,55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="105" y="60">OH</text>` +
+    SVG_CLOSE,
+
+  // Threonine -- Cα—CH(OH)—CH3 (branched at first C)
+  T: SVG_OPEN +
+    `<line x1="20" y1="55" x2="60" y2="55"/>` +
+    `<line x1="60" y1="55" x2="60" y2="28"/>` +
+    `<line x1="60" y1="55" x2="92" y2="74"/>` +
+    SVG_LBL_OPEN +
+    `<text x="60" y="22">OH</text>` +
+    `<text x="124" y="78">CH₃</text>` +
+    SVG_CLOSE,
+
+  // Cysteine -- Cα—CH2—SH
+  C: SVG_OPEN +
+    `<polyline points="20,55 50,38 80,55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="105" y="60">SH</text>` +
+    SVG_CLOSE,
+
+  // Asparagine -- Cα—CH2—C(=O)—NH2
+  N: SVG_OPEN +
+    `<polyline points="20,55 45,38 75,55"/>` +
+    `<line x1="73" y1="53" x2="73" y2="30"/>` +
+    `<line x1="77" y1="53" x2="77" y2="30"/>` +
+    `<line x1="75" y1="55" x2="103" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="75" y="22">O</text>` +
+    `<text x="130" y="60">NH₂</text>` +
+    SVG_CLOSE,
+
+  // Glutamine -- Cα—CH2—CH2—C(=O)—NH2
+  Q: SVG_OPEN +
+    `<polyline points="20,55 45,38 75,55 105,38"/>` +
+    `<line x1="103" y1="36" x2="103" y2="13"/>` +
+    `<line x1="107" y1="36" x2="107" y2="13"/>` +
+    `<line x1="105" y1="38" x2="135" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="105" y="6">O</text>` +
+    `<text x="162" y="60">NH₂</text>` +
+    SVG_CLOSE,
+
+  // Aspartate -- Cα—CH2—COO⁻ (physiological pH)
+  D: SVG_OPEN +
+    `<polyline points="20,55 45,38 75,55"/>` +
+    `<line x1="73" y1="53" x2="73" y2="30"/>` +
+    `<line x1="77" y1="53" x2="77" y2="30"/>` +
+    `<line x1="75" y1="55" x2="103" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="75" y="22">O</text>` +
+    `<text x="124" y="60">O⁻</text>` +
+    SVG_CLOSE,
+
+  // Glutamate -- Cα—CH2—CH2—COO⁻
+  E: SVG_OPEN +
+    `<polyline points="20,55 45,38 75,55 105,38"/>` +
+    `<line x1="103" y1="36" x2="103" y2="13"/>` +
+    `<line x1="107" y1="36" x2="107" y2="13"/>` +
+    `<line x1="105" y1="38" x2="135" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="105" y="6">O</text>` +
+    `<text x="158" y="60">O⁻</text>` +
+    SVG_CLOSE,
+
+  // Lysine -- Cα—(CH2)4—NH3⁺
+  K: SVG_OPEN +
+    `<polyline points="20,55 45,38 70,55 95,38 120,55 145,38"/>` +
+    SVG_LBL_OPEN +
+    `<text x="178" y="42">NH₃⁺</text>` +
+    SVG_CLOSE,
+
+  // Arginine -- Cα—(CH2)3—NH—C(=NH2⁺)—NH2  (guanidinium)
+  R: SVG_OPEN +
+    // 3 CH2 chain
+    `<polyline points="20,55 45,38 70,55 92,42"/>` +
+    // bond to NH (label)
+    `<line x1="108" y1="42" x2="125" y2="55"/>` +
+    // C of guanidinium
+    `<line x1="125" y1="55" x2="148" y2="42"/>` +
+    // C=N(H2+) double bond up
+    `<line x1="146" y1="40" x2="146" y2="18"/>` +
+    `<line x1="150" y1="40" x2="150" y2="18"/>` +
+    // C-NH2
+    `<line x1="148" y1="42" x2="174" y2="55"/>` +
+    SVG_LBL_OPEN +
+    `<text x="100" y="46">N</text>` +
+    `<text x="100" y="34" font-size="10">H</text>` +
+    `<text x="148" y="13" font-size="13">NH₂⁺</text>` +
+    `<text x="200" y="60">NH₂</text>` +
+    SVG_CLOSE,
+
+  // Histidine -- Cα—CH2—imidazole (5-ring with 2 N)
+  H: (() => {
+    // Pentagon for imidazole, center (130, 52), radius 22
+    const cx = 130, cy = 52, r = 22;
+    const verts = [];
+    // Start at angle 180° (left) and go counter-clockwise so left-most vertex is the connection
+    for (let i = 0; i < 5; i++) {
+      const a = Math.PI + i * (2 * Math.PI / 5); // 180, 252, 324, 36, 108
+      verts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    // verts[0] = leftmost (CH2 connects, this is C4)
+    // verts[1] = upper-left  (C5)
+    // verts[2] = upper-right (N1 with H)
+    // verts[3] = lower-right (C2)
+    // verts[4] = lower-left  (N3, basic)
+    const [v0, v1, v2, v3, v4] = verts;
+
+    // Helper: label position offset radially outward from a vertex
+    const outsideLabel = ([vx, vy], distance) => {
+      const dx = vx - cx, dy = vy - cy;
+      const m = Math.sqrt(dx*dx + dy*dy) || 1;
+      return [vx + (dx / m) * distance, vy + (dy / m) * distance];
+    };
+    const [n1x, n1y] = outsideLabel(v2, 14); // NH label position
+    const [n3x, n3y] = outsideLabel(v4, 14); // N label position
+
+    return SVG_OPEN +
+      `<line x1="20" y1="55" x2="50" y2="38"/>` +
+      `<line x1="50" y1="38" x2="${v0[0].toFixed(1)}" y2="${v0[1].toFixed(1)}"/>` +
+      `<polygon points="${verts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}"/>` +
+      SVG_LBL_OPEN +
+      `<text x="${n1x.toFixed(1)}" y="${(n1y + 4).toFixed(1)}" font-size="13">NH</text>` +
+      `<text x="${n3x.toFixed(1)}" y="${(n3y + 4).toFixed(1)}" font-size="13">N</text>` +
+      SVG_CLOSE;
+  })()
+};
+
+/* The 20 standard amino acids */
+const AAS = [
+  { name: 'Glycine',       three: 'Gly', letter: 'G', pkr: 'N/A' },
+  { name: 'Alanine',       three: 'Ala', letter: 'A', pkr: 'N/A' },
+  { name: 'Valine',        three: 'Val', letter: 'V', pkr: 'N/A' },
+  { name: 'Leucine',       three: 'Leu', letter: 'L', pkr: 'N/A' },
+  { name: 'Isoleucine',    three: 'Ile', letter: 'I', pkr: 'N/A' },
+  { name: 'Proline',       three: 'Pro', letter: 'P', pkr: 'N/A' },
+  { name: 'Phenylalanine', three: 'Phe', letter: 'F', pkr: 'N/A' },
+  { name: 'Tyrosine',      three: 'Tyr', letter: 'Y', pkr: '10.0' },
+  { name: 'Tryptophan',    three: 'Trp', letter: 'W', pkr: 'N/A' },
+  { name: 'Methionine',    three: 'Met', letter: 'M', pkr: 'N/A' },
+  { name: 'Serine',        three: 'Ser', letter: 'S', pkr: 'N/A' },
+  { name: 'Threonine',     three: 'Thr', letter: 'T', pkr: 'N/A' },
+  { name: 'Cysteine',      three: 'Cys', letter: 'C', pkr: '8.3'  },
+  { name: 'Asparagine',    three: 'Asn', letter: 'N', pkr: 'N/A' },
+  { name: 'Glutamine',     three: 'Gln', letter: 'Q', pkr: 'N/A' },
+  { name: 'Aspartate',     three: 'Asp', letter: 'D', pkr: '3.9'  },
+  { name: 'Glutamate',     three: 'Glu', letter: 'E', pkr: '4.2'  },
+  { name: 'Lysine',        three: 'Lys', letter: 'K', pkr: '10.5' },
+  { name: 'Arginine',      three: 'Arg', letter: 'R', pkr: '12.5' },
+  { name: 'Histidine',     three: 'His', letter: 'H', pkr: '6.0'  }
+];
+
+const PKR_NUMERIC = ['12.5', '10.5', '10.0', '8.3', '6.0', '4.2', '3.9'];
+
+/* =========================================================================
+   STATE & SPACED REPETITION
+   ========================================================================= */
+const STORAGE_KEY = 'aa-profile-builder-v1';
+
+const state = {
+  /* per-AA stats */
+  history: {},        // letter -> { weight, attempts, correct, streak }
+  streak: 0,          // current consecutive perfect rounds
+  bestStreak: 0,
+  current: null,      // current AA object
+  placed: { letter: null, structure: null, pkr: null },
+  bank: [],           // tile descriptors
+  validated: false    // if current round has been checked
+};
+
+function defaultStats() {
+  return { weight: 1.0, attempts: 0, correct: 0, streak: 0 };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object') {
+        state.history = data.history || {};
+        state.bestStreak = data.bestStreak || 0;
+      }
+    }
+  } catch (e) { /* ignore */ }
+  // Always ensure every AA has a stats object, whether or not we loaded
+  for (const aa of AAS) {
+    if (!state.history[aa.letter]) state.history[aa.letter] = defaultStats();
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      history: state.history,
+      bestStreak: state.bestStreak
+    }));
+  } catch (e) { /* ignore quota errors */ }
+}
+
+/* Weighted-random AA selection.
+   Higher weight = appears more often. Mistakes raise weight, mastery lowers it. */
+function pickAA(avoid) {
+  const candidates = AAS.filter(a => a !== avoid);
+  const weights = candidates.map(a => Math.max(0.15, state.history[a.letter].weight));
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < candidates.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return candidates[i];
+  }
+  return candidates[candidates.length - 1];
+}
+
+/* Update spaced-repetition stats after a round. */
+function recordResult(aa, allCorrect) {
+  const s = state.history[aa.letter];
+  s.attempts++;
+  if (allCorrect) {
+    s.correct++;
+    s.streak++;
+    // mastered amino acids surface less often
+    if (s.streak >= 3) s.weight = Math.max(0.2, s.weight * 0.6);
+    else                s.weight = Math.max(0.3, s.weight - 0.18);
+  } else {
+    s.streak = 0;
+    s.weight = Math.min(5.0, s.weight + 1.6);
+  }
+  saveState();
+}
+
+/* =========================================================================
+   ROUND GENERATION
+   ========================================================================= */
+function generateBank(target) {
+  // Pick 2 wrong letters (other AAs)
+  const others = AAS.filter(a => a !== target);
+  const shuffle = arr => arr.slice().sort(() => Math.random() - 0.5);
+
+  const wrongLetterAAs = shuffle(others).slice(0, 2);
+  const wrongStructAAs = shuffle(others).slice(0, 2);
+
+  // pKr distractors — depend on whether correct is N/A or numeric
+  let wrongPkrs;
+  if (target.pkr === 'N/A') {
+    wrongPkrs = shuffle(PKR_NUMERIC).slice(0, 2);
+  } else {
+    const otherNums = PKR_NUMERIC.filter(p => p !== target.pkr);
+    // Mix of numeric and N/A
+    if (Math.random() < 0.55) {
+      wrongPkrs = ['N/A', shuffle(otherNums)[0]];
+    } else {
+      wrongPkrs = shuffle(otherNums).slice(0, 2);
+    }
+  }
+
+  const tiles = [];
+  // Letters (3 total)
+  tiles.push({ id: 't-l-' + target.letter, type: 'letter', value: target.letter, isCorrect: true });
+  for (const aa of wrongLetterAAs) {
+    tiles.push({ id: 't-l-' + aa.letter + '-d', type: 'letter', value: aa.letter, isCorrect: false });
+  }
+  // Structures (3 total)
+  tiles.push({ id: 't-s-' + target.letter, type: 'structure', value: target.letter, structure: STRUCTURES[target.letter], isCorrect: true });
+  for (const aa of wrongStructAAs) {
+    tiles.push({ id: 't-s-' + aa.letter + '-d', type: 'structure', value: aa.letter, structure: STRUCTURES[aa.letter], isCorrect: false });
+  }
+  // pKr (3 total)
+  tiles.push({ id: 't-p-' + target.letter, type: 'pkr', value: target.pkr, isCorrect: true });
+  wrongPkrs.forEach((p, i) => {
+    tiles.push({ id: 't-p-' + i + '-d', type: 'pkr', value: p, isCorrect: false });
+  });
+
+  return shuffle(tiles);
+}
+
+/* =========================================================================
+   RENDERING
+   ========================================================================= */
+const els = {
+  aaName: document.getElementById('aaName'),
+  aaThree: document.getElementById('aaThree'),
+  bank: document.getElementById('bank'),
+  bankHint: document.getElementById('bankHint'),
+  dropZones: document.getElementById('dropZones'),
+  checkBtn: document.getElementById('checkBtn'),
+  skipBtn: document.getElementById('skipBtn'),
+  resetBtn: document.getElementById('resetBtn'),
+  streak: document.getElementById('streak'),
+  mastered: document.getElementById('mastered'),
+  progressBar: document.getElementById('progressBar'),
+  feedback: document.getElementById('feedback'),
+  feedbackTitle: document.getElementById('feedbackTitle'),
+  feedbackDetail: document.getElementById('feedbackDetail')
+};
+
+function tileInner(tile) {
+  if (tile.type === 'letter') {
+    return `<div class="tile-letter">${tile.value}</div>`;
+  }
+  if (tile.type === 'structure') {
+    return `<div class="tile-structure">${tile.structure}</div>`;
+  }
+  if (tile.type === 'pkr') {
+    if (tile.value === 'N/A') return `<div class="tile-pkr-na">N / A</div>`;
+    return `<div class="tile-pkr">${tile.value}</div>`;
+  }
+  return '';
+}
+
+function renderBank() {
+  els.bank.innerHTML = '';
+  for (const t of state.bank) {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.dataset.tileId = t.id;
+    el.dataset.type = t.type;
+    el.innerHTML = tileInner(t);
+    bindDrag(el);
+    els.bank.appendChild(el);
+  }
+}
+
+function clearAllZones() {
+  document.querySelectorAll('.drop-zone').forEach(z => {
+    z.classList.remove('filled', 'correct', 'incorrect', 'drag-over');
+    const content = z.querySelector('.drop-zone-content');
+    content.innerHTML = '<span class="drop-zone-placeholder">?</span>';
+  });
+}
+
+function placeIntoZone(tileEl, zone) {
+  const tileId = tileEl.dataset.tileId;
+  const type = tileEl.dataset.type;
+  const tile = state.bank.find(t => t.id === tileId);
+  if (!tile) return;
+
+  // If this tile is already in another slot, free that slot first
+  for (const slot of ['letter','structure','pkr']) {
+    if (state.placed[slot] && state.placed[slot].id === tileId) {
+      state.placed[slot] = null;
+      const oldZone = document.querySelector(`.drop-zone[data-type="${slot}"]`);
+      oldZone.classList.remove('filled','correct','incorrect');
+      oldZone.querySelector('.drop-zone-content').innerHTML = '<span class="drop-zone-placeholder">?</span>';
+    }
+  }
+
+  // If target zone already has a tile, return that tile to bank
+  if (state.placed[type]) {
+    const previous = state.placed[type];
+    const prevEl = els.bank.querySelector(`.tile[data-tile-id="${previous.id}"]`);
+    if (prevEl) prevEl.classList.remove('is-hidden');
+  }
+
+  // Place new tile in zone
+  state.placed[type] = tile;
+  zone.classList.add('filled');
+  zone.classList.remove('correct','incorrect');
+  const content = zone.querySelector('.drop-zone-content');
+  content.innerHTML = tileInner(tile);
+  // Hide the source tile in the bank
+  tileEl.classList.add('is-hidden');
+
+  updateCheckButton();
+}
+
+function removeFromZone(zone) {
+  const type = zone.dataset.type;
+  const tile = state.placed[type];
+  if (!tile) return;
+  state.placed[type] = null;
+  zone.classList.remove('filled','correct','incorrect');
+  zone.querySelector('.drop-zone-content').innerHTML = '<span class="drop-zone-placeholder">?</span>';
+  const tileEl = els.bank.querySelector(`.tile[data-tile-id="${tile.id}"]`);
+  if (tileEl) tileEl.classList.remove('is-hidden');
+  updateCheckButton();
+}
+
+function updateCheckButton() {
+  const filled = state.placed.letter && state.placed.structure && state.placed.pkr;
+  els.checkBtn.disabled = !filled || state.validated;
+  // Update progress bar (1/3, 2/3, 3/3)
+  const filledCount = ['letter','structure','pkr'].filter(k => state.placed[k]).length;
+  els.progressBar.style.width = (filledCount / 3 * 100) + '%';
+}
+
+/* =========================================================================
+   POINTER-EVENT DRAG & DROP (works on touch + mouse + pen)
+   ========================================================================= */
+let dragSession = null;
+
+function bindDrag(tileEl) {
+  tileEl.addEventListener('pointerdown', onPointerDown);
+}
+
+function bindZoneTap(zone) {
+  // Click on a placed tile inside a zone: return it to the bank.
+  zone.addEventListener('click', (e) => {
+    if (state.validated) return;
+    const inner = zone.querySelector('.drop-zone-content');
+    if (inner && inner.firstElementChild && !inner.firstElementChild.classList.contains('drop-zone-placeholder')) {
+      removeFromZone(zone);
+    }
+  });
+}
+
+function onPointerDown(e) {
+  if (e.button !== undefined && e.button !== 0) return; // left button only
+  if (state.validated) return;
+  const tileEl = e.currentTarget;
+  if (tileEl.classList.contains('is-hidden')) return;
+
+  e.preventDefault();
+  tileEl.setPointerCapture && tileEl.setPointerCapture(e.pointerId);
+
+  const rect = tileEl.getBoundingClientRect();
+  const clone = tileEl.cloneNode(true);
+  clone.classList.remove('tile');
+  clone.classList.add('drag-clone');
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.left = e.clientX + 'px';
+  clone.style.top = e.clientY + 'px';
+  document.body.appendChild(clone);
+
+  tileEl.classList.add('dragging');
+  document.body.classList.add('is-dragging');
+
+  let moved = false;
+  const startX = e.clientX, startY = e.clientY;
+
+  dragSession = { tileEl, clone, pointerId: e.pointerId, moved: false };
+
+  function move(ev) {
+    const dx = ev.clientX - startX, dy = ev.clientY - startY;
+    if (!moved && (dx*dx + dy*dy) > 16) moved = true;
+    clone.style.left = ev.clientX + 'px';
+    clone.style.top = ev.clientY + 'px';
+
+    // Hit-test for drop zones
+    document.querySelectorAll('.drop-zone.drag-over').forEach(z => z.classList.remove('drag-over'));
+    const target = document.elementFromPoint(ev.clientX, ev.clientY);
+    const zone = target && target.closest && target.closest('.drop-zone');
+    if (zone && zone.dataset.type === tileEl.dataset.type) {
+      zone.classList.add('drag-over');
+    }
+  }
+
+  function up(ev) {
+    document.querySelectorAll('.drop-zone.drag-over').forEach(z => z.classList.remove('drag-over'));
+    clone.remove();
+    tileEl.classList.remove('dragging');
+    document.body.classList.remove('is-dragging');
+
+    const target = document.elementFromPoint(ev.clientX, ev.clientY);
+    const zone = target && target.closest && target.closest('.drop-zone');
+
+    if (moved && zone && zone.dataset.type === tileEl.dataset.type) {
+      placeIntoZone(tileEl, zone);
+    } else if (!moved) {
+      // Treat as a tap: auto-place into matching zone if the slot is empty
+      const matchingZone = document.querySelector(`.drop-zone[data-type="${tileEl.dataset.type}"]`);
+      if (matchingZone && !state.placed[tileEl.dataset.type]) {
+        placeIntoZone(tileEl, matchingZone);
+      }
+    }
+
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+    dragSession = null;
+  }
+
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+}
+
+/* =========================================================================
+   ROUND FLOW
+   ========================================================================= */
+function newRound(avoid) {
+  state.current = pickAA(avoid);
+  state.placed = { letter: null, structure: null, pkr: null };
+  state.validated = false;
+  state.bank = generateBank(state.current);
+
+  els.aaName.textContent = state.current.name;
+  els.aaThree.textContent = state.current.three.toUpperCase() + ' • Standard amino acid';
+  els.checkBtn.textContent = 'Check Answer';
+  els.checkBtn.disabled = true;
+  els.progressBar.style.width = '0%';
+
+  clearAllZones();
+  renderBank();
+  updateStatsDisplay();
+}
+
+function checkAnswer() {
+  if (state.validated) return;
+  const target = state.current;
+  const checks = {
+    letter:    state.placed.letter    && state.placed.letter.value === target.letter,
+    structure: state.placed.structure && state.placed.structure.value === target.letter, // structure tile.value stores the source letter
+    pkr:       state.placed.pkr       && state.placed.pkr.value === target.pkr
+  };
+  const allCorrect = checks.letter && checks.structure && checks.pkr;
+
+  // Visual feedback per zone
+  for (const t of ['letter','structure','pkr']) {
+    const zone = document.querySelector(`.drop-zone[data-type="${t}"]`);
+    zone.classList.remove('correct','incorrect');
+    zone.classList.add(checks[t] ? 'correct' : 'incorrect');
+  }
+
+  recordResult(target, allCorrect);
+
+  if (allCorrect) {
+    state.streak++;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    saveState();
+    showFeedback(true, 'Perfect profile! ✨', `${target.name} — ${target.letter} • ${target.pkr === 'N/A' ? 'no ionizable side chain' : 'pKr ≈ ' + target.pkr}`);
+    state.validated = true;
+    els.checkBtn.textContent = 'Next →';
+    els.checkBtn.disabled = false;
+  } else {
+    state.streak = 0;
+    saveState();
+    const wrongList = ['letter','structure','pkr'].filter(t => !checks[t]).map(t => {
+      if (t === 'letter') return '1-letter';
+      if (t === 'structure') return 'structure';
+      return 'pKr';
+    }).join(' • ');
+    showFeedback(false, 'Not quite — try again', wrongList + ' was off');
+    state.validated = true;
+    els.checkBtn.textContent = 'Show Answer →';
+    els.checkBtn.disabled = false;
+  }
+  updateStatsDisplay();
+}
+
+function revealAndNext() {
+  // After a wrong answer, "Show Answer" reveals correct values then advances
+  const target = state.current;
+
+  // Find correct tiles in bank and place them where missing/wrong
+  const correctTiles = {
+    letter: state.bank.find(t => t.type === 'letter' && t.value === target.letter),
+    structure: state.bank.find(t => t.type === 'structure' && t.value === target.letter),
+    pkr: state.bank.find(t => t.type === 'pkr' && t.value === target.pkr)
+  };
+  for (const slot of ['letter','structure','pkr']) {
+    const zone = document.querySelector(`.drop-zone[data-type="${slot}"]`);
+    zone.classList.remove('correct','incorrect','filled');
+    zone.classList.add('correct');
+    const t = correctTiles[slot];
+    if (t) zone.querySelector('.drop-zone-content').innerHTML = tileInner(t);
+  }
+  els.checkBtn.textContent = 'Next →';
+  els.checkBtn.disabled = false;
+  // mark as 'reveal' state
+  state.validated = 'revealed';
+}
+
+function onCheckClick() {
+  if (!state.validated) {
+    checkAnswer();
+  } else if (state.validated === true && els.checkBtn.textContent.includes('Show')) {
+    revealAndNext();
+  } else {
+    // Next round; pass current to avoid immediate repeat
+    newRound(state.current);
+  }
+}
+
+function showFeedback(success, title, detail) {
+  els.feedback.classList.toggle('success', success);
+  els.feedback.classList.toggle('error', !success);
+  els.feedbackTitle.textContent = title;
+  els.feedbackDetail.textContent = detail || '';
+  els.feedback.classList.add('show');
+  clearTimeout(showFeedback._t);
+  showFeedback._t = setTimeout(() => {
+    els.feedback.classList.remove('show');
+  }, 2400);
+}
+
+function updateStatsDisplay() {
+  els.streak.textContent = state.streak;
+  const masteredCount = AAS.filter(a => state.history[a.letter].streak >= 3).length;
+  els.mastered.innerHTML = `${masteredCount}<span style="opacity:0.4">/20</span>`;
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+function init() {
+  loadState();
+  document.querySelectorAll('.drop-zone').forEach(bindZoneTap);
+  els.checkBtn.addEventListener('click', onCheckClick);
+  els.skipBtn.addEventListener('click', () => {
+    // skip = soft penalty, mark as a wrong attempt to keep AA in rotation
+    if (state.current && !state.validated) {
+      const s = state.history[state.current.letter];
+      s.weight = Math.min(4.0, s.weight + 0.6);
+      state.streak = 0;
+      saveState();
+    }
+    newRound(state.current);
+  });
+  els.resetBtn.addEventListener('click', () => {
+    if (!confirm('Reset all progress?')) return;
+    state.history = {};
+    state.streak = 0;
+    state.bestStreak = 0;
+    for (const aa of AAS) state.history[aa.letter] = defaultStats();
+    saveState();
+    newRound();
+  });
+  newRound();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
