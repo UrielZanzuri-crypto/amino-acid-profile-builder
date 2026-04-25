@@ -577,6 +577,446 @@
 
   /* Screen-reader only */
   .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* ============================================================
+     MODE TOGGLE — segmented control with sliding thumb
+     ============================================================ */
+  .mode-toggle {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 4px;
+    box-shadow: var(--shadow-soft);
+    isolation: isolate;
+  }
+  .mode-thumb {
+    position: absolute;
+    top: 4px; bottom: 4px; left: 4px;
+    width: calc(50% - 4px);
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(167, 139, 250, 0.28));
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: transform 0.32s cubic-bezier(0.34, 1.36, 0.64, 1);
+    z-index: 0;
+  }
+  .mode-toggle[data-active="test"] .mode-thumb { transform: translateX(100%); }
+  .mode-btn {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border: none;
+    padding: 11px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 10px;
+    font-family: inherit;
+    transition: color 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-tap-highlight-color: transparent;
+    letter-spacing: 0.01em;
+  }
+  .mode-btn[aria-selected="true"] { color: var(--text); }
+  .mode-icon { font-size: 15px; }
+
+  /* Sections show/hide */
+  .mode-section[hidden] { display: none !important; }
+
+  /* ============================================================
+     STUDY MODE — family-grouped cards
+     ============================================================ */
+  #studyMode { display: flex; flex-direction: column; gap: 12px; }
+  .study-intro {
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .study-intro p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  #familiesContainer { display: flex; flex-direction: column; gap: 12px; }
+
+  .family {
+    --family-color: var(--cyan);
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+  }
+  .family::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 0% 0%, var(--family-color), transparent 70%);
+    opacity: 0.08;
+    pointer-events: none;
+  }
+  .family-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .family-pill {
+    display: inline-block;
+    background: color-mix(in srgb, var(--family-color) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--family-color) 50%, transparent);
+    color: var(--family-color);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 5px 10px;
+    border-radius: 999px;
+  }
+  .family-subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+  .family-count {
+    flex: 0 0 auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--family-color);
+    background: color-mix(in srgb, var(--family-color) 12%, transparent);
+    padding: 4px 9px;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+  }
+  .family-members {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  @media (min-width: 540px) {
+    .family-members { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  }
+
+  .member-card {
+    background: rgba(20, 18, 50, 0.55);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 10px 6px 8px;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.2s, background 0.2s, box-shadow 0.25s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  .member-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px transparent;
+    transition: box-shadow 0.25s;
+    pointer-events: none;
+  }
+  .member-card:hover, .member-card:focus-visible {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--family-color) 60%, transparent);
+    background: rgba(30, 26, 70, 0.6);
+    outline: none;
+  }
+  .member-card:hover::after, .member-card:focus-visible::after {
+    box-shadow: inset 0 0 22px color-mix(in srgb, var(--family-color) 18%, transparent);
+  }
+  .member-card-svg {
+    width: 100%;
+    height: 36px;
+    color: var(--text);
+    opacity: 0.85;
+    display: grid;
+    place-items: center;
+  }
+  .member-card-svg svg { width: 100%; height: 100%; max-width: 110px; }
+  .member-card-three {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+  .member-card-one {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--family-color);
+    background: color-mix(in srgb, var(--family-color) 14%, transparent);
+    border-radius: 6px;
+    padding: 2px 7px;
+    letter-spacing: 0;
+  }
+
+  /* ============================================================
+     MASTER CARD MODAL
+     ============================================================ */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    background: rgba(6, 8, 24, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    opacity: 0;
+    transition: opacity 0.28s ease;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .modal-backdrop[hidden] { display: none !important; }
+  .modal-backdrop.show { opacity: 1; }
+
+  .modal-card {
+    --family-color: var(--violet);
+    width: 100%;
+    max-width: 460px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    background: linear-gradient(160deg, rgba(40, 36, 90, 0.96), rgba(15, 13, 38, 0.96));
+    border: 1px solid var(--glass-border-strong);
+    border-radius: 22px;
+    padding: 22px 22px 20px;
+    position: relative;
+    box-shadow: var(--shadow-pop), 0 0 60px color-mix(in srgb, var(--family-color) 20%, transparent);
+    transform: scale(0.94) translateY(12px);
+    transition: transform 0.34s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-backdrop.show .modal-card { transform: scale(1) translateY(0); }
+  /* gradient ring on top */
+  .modal-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink));
+    border-radius: 22px 22px 0 0;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    font-family: inherit;
+    z-index: 2;
+  }
+  .modal-close:hover { background: rgba(251, 113, 133, 0.18); color: var(--text); transform: scale(1.05); }
+
+  .mc-review-banner {
+    background: rgba(251, 113, 133, 0.12);
+    border: 1px solid rgba(251, 113, 133, 0.4);
+    color: #fda4af;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 10px;
+    margin: 6px 36px 12px 0;
+    text-align: center;
+  }
+
+  .mc-name {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #67e8f9 0%, var(--violet) 60%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    padding-right: 36px;
+  }
+  .mc-codes {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .mc-three { color: var(--text-dim); letter-spacing: 0.05em; }
+  .mc-dot { color: var(--text-muted); }
+  .mc-one {
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .mc-family-tag {
+    display: inline-block;
+    margin-top: 10px;
+    background: color-mix(in srgb, var(--family-color) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--family-color) 45%, transparent);
+    color: var(--family-color);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .mc-structure-frame {
+    margin: 16px 0 12px;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+  }
+  .mc-structure-frame svg { width: 100%; max-width: 320px; height: auto; min-height: 90px; }
+
+  .mc-pkr-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .mc-pkr-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+  }
+  .mc-pkr-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--amber);
+  }
+  .mc-pkr-value.na { color: var(--text-muted); font-size: 14px; letter-spacing: 0.05em; }
+
+  .mc-mnemonic {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.06), rgba(167, 139, 250, 0.06));
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 14px;
+    padding: 14px 14px 14px;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .mc-mnemonic-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .mc-mnemonic-text {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+
+  .mc-action-btn {
+    width: 100%;
+    padding: 13px 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    box-shadow: 0 8px 24px rgba(167, 139, 250, 0.32), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 0.18s, box-shadow 0.2s;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mc-action-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(167, 139, 250, 0.45); }
+  .mc-action-btn:active { transform: translateY(0); }
+
+  .mc-correct-tile-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .mc-correct-tile {
+    background: rgba(52, 211, 153, 0.10);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    border-radius: 10px;
+    padding: 8px 4px;
+    text-align: center;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .mc-correct-tile-label {
+    font-size: 9px;
+    color: var(--emerald);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .mc-correct-tile-value { color: var(--text); font-weight: 700; }
+  .mc-correct-tile .tile-letter { font-size: 22px; }
+  .mc-correct-tile .tile-pkr { font-size: 16px; }
+  .mc-correct-tile .tile-pkr-na { font-size: 12px; }
+  .mc-correct-tile .tile-structure { height: 36px; }
+
 </style>
 </head>
 <body>
@@ -589,7 +1029,7 @@
       <div class="brand-mark" aria-hidden="true">α</div>
       <div class="brand-text">
         <h1>Amino Acid Profile</h1>
-        <p>Memorize all 20 standard amino acids</p>
+        <p>Study & test all 20 amino acids</p>
       </div>
     </div>
     <div class="stats">
@@ -604,6 +1044,29 @@
     </div>
   </header>
 
+  <!-- Mode toggle -->
+  <div class="mode-toggle" role="tablist" aria-label="Mode">
+    <button class="mode-btn" data-mode="study" role="tab" type="button" aria-selected="false">
+      <span class="mode-icon" aria-hidden="true">📖</span>
+      <span class="mode-label">Study</span>
+    </button>
+    <button class="mode-btn" data-mode="test" role="tab" type="button" aria-selected="false">
+      <span class="mode-icon" aria-hidden="true">⚡</span>
+      <span class="mode-label">Test</span>
+    </button>
+    <span class="mode-thumb" aria-hidden="true"></span>
+  </div>
+
+  <!-- ============ STUDY MODE ============ -->
+  <main id="studyMode" class="mode-section" aria-label="Study mode">
+    <div class="study-intro">
+      <p>Tap any amino acid to open its memory card. Grouped by biochemical family.</p>
+    </div>
+    <div id="familiesContainer"></div>
+  </main>
+
+  <!-- ============ TEST MODE ============ -->
+  <main id="testMode" class="mode-section" aria-label="Test mode" hidden>
   <section class="stage" aria-live="polite">
     <div class="stage-label">Build the profile of</div>
     <div class="stage-name" id="aaName">—</div>
@@ -642,11 +1105,17 @@
   <div style="display:flex; justify-content:center; padding-top:4px;">
     <button class="reset-link" id="resetBtn" type="button">Reset progress</button>
   </div>
+  </main>
 </div>
 
 <div class="feedback" id="feedback" role="status" aria-live="polite">
   <div class="feedback-title" id="feedbackTitle"></div>
   <div class="feedback-detail" id="feedbackDetail"></div>
+</div>
+
+<!-- Master card modal (used for both Study browsing and Test-mode review) -->
+<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalName" hidden>
+  <div class="modal-card" id="modalCard"></div>
 </div>
 
 <script>
@@ -965,6 +1434,79 @@ const AAS = [
 
 const PKR_NUMERIC = ['12.5', '10.5', '10.0', '8.3', '6.0', '4.2', '3.9'];
 
+/* Quick lookup */
+const AA_BY_LETTER = Object.fromEntries(AAS.map(a => [a.letter, a]));
+
+/* Memory hooks — written as a master memory coach for medical students.
+   Each one ties the 1-letter code or structure to a vivid, clinical hook. */
+const MNEMONICS = {
+  G: "G is for Glycine — the smallest, simplest 'guy' in the family. Its R group is just a single hydrogen, which makes Glycine the only achiral amino acid (no stereocenter). Tiny and flexible — found wherever proteins need a tight bend.",
+  A: "A is for Alanine — the 'apprentice aliphatic'. Just one rung above Glycine: a single methyl group (CH₃) for a side chain. Simple, hydrophobic, abundant.",
+  V: "V for Valine — the two CH₃ branches literally form a V off the β-carbon. Branched, bulky, hydrophobic. Together with Leu and Ile, these are the BCAAs (branched-chain amino acids).",
+  L: "L for Leucine — think 'L is Long-er V' (Valine plus an extra CH₂). Most abundant amino acid in proteins. Triggers mTOR and protein synthesis.",
+  I: "I for Isoleucine — an Isomer of Leucine. Same atoms, different branching: the methyl branch sits on the β-carbon instead of the γ-carbon.",
+  M: "M for Methionine — the only amino acid with a Methyl-on-Sulfur (S–CH₃). Also the Mighty start codon: AUG = Met begins every protein.",
+  P: "P for Proline — its side chain Pinches back to form a Pentagon Prison around the α-nitrogen. The only amino acid with a secondary amine — kinks polypeptide chains and breaks α-helices.",
+  F: "F for Phenylalanine — 'Ph' sounds like F. Just a benzene ring (phenyl) hanging off a CH₂. Aromatic and hydrophobic; precursor to Tyrosine.",
+  Y: "Y for Tyrosine — the letter Y branches like the OH off the top of the ring. Tyr is the only aromatic with a meaningful pKr (~10) and is the major target for tyrosine kinases.",
+  W: "W for Tryptophan — its fused indole double-ring silhouettes a stylized W. The bulkiest amino acid, the rarest in proteins, and the precursor to serotonin & melatonin.",
+  S: "S for Serine — Small Side-chain with a Simple OH. Common phosphorylation target (Ser/Thr kinases) and the catalytic residue in serine proteases.",
+  T: "T for Threonine — Three substituents on its β-carbon (OH, CH₃, H). The β-OH makes Thr a phosphorylation site like Ser.",
+  C: "C for Cysteine — 'See SH'. The only amino acid with a thiol; two cysteines link via disulfide bridges (—S—S—) to lock protein structure in place.",
+  N: "N for Asparagine — N because the side chain ends in a Nitrogen amide (—CONH₂). N-linked glycosylation happens here. Asn is the amide of Asp.",
+  Q: "Q for Glutamine — pronounced 'Q-tamine'. Q sits right after N in the alphabet, just as Gln is one CH₂ longer than Asn. The body's main nitrogen carrier in blood.",
+  D: "D for aspartate — D is for 'aciDic'. Asp and Asn look like twins (same backbone), but D ends in —COO⁻ while N ends in —CONH₂. Pair: D = acid, N = amide.",
+  E: "E for glutamatE — E follows D in the alphabet, just like Glu is one CH₂ longer than Asp. E also stands for Excitatory: Glu is the brain's main excitatory neurotransmitter.",
+  K: "K for Lysine — K's long diagonal arms mirror Lys's long 4-CH₂ tail tipped with NH₃⁺. Lysine 'Kicks' out positive charge and is the prime target for histone acetylation/methylation.",
+  R: "R for Arginine — the R is right in the name (a-R-ginine). Bears the guanidinium group: the most positively charged side chain at physiological pH (pKr ≈ 12.5 — always protonated).",
+  H: "H for Histidine — its imidazole ring contains an N-H. Critically, His's pKr (~6.0) sits closest to physiological pH, so it acts as the body's main amino-acid buffer and the catalytic residue in many enzymes (e.g. chymotrypsin's catalytic triad)."
+};
+
+/* Biochemical families — Lehninger / Lippincott grouping */
+const FAMILIES = [
+  {
+    id: 'nonpolar',
+    title: 'Nonpolar / Aliphatic',
+    subtitle: 'Hydrophobic side chains — no charge, no rings',
+    color: '#fbbf24',
+    members: ['G', 'A', 'V', 'L', 'I', 'M', 'P']
+  },
+  {
+    id: 'aromatic',
+    title: 'Aromatic',
+    subtitle: 'Ring side chains — UV-absorbing, hydrophobic',
+    color: '#a78bfa',
+    members: ['F', 'Y', 'W']
+  },
+  {
+    id: 'polar',
+    title: 'Polar Uncharged',
+    subtitle: 'Hydroxyl, sulfhydryl, or amide groups',
+    color: '#22d3ee',
+    members: ['S', 'T', 'C', 'N', 'Q']
+  },
+  {
+    id: 'acidic',
+    title: 'Acidic — Negatively Charged',
+    subtitle: 'Carboxylate side chains — anionic at pH 7',
+    color: '#fb7185',
+    members: ['D', 'E']
+  },
+  {
+    id: 'basic',
+    title: 'Basic — Positively Charged',
+    subtitle: 'Amino-group side chains — cationic at pH 7',
+    color: '#34d399',
+    members: ['K', 'R', 'H']
+  }
+];
+
+const FAMILY_BY_LETTER = (() => {
+  const m = {};
+  for (const f of FAMILIES) for (const l of f.members) m[l] = f;
+  return m;
+})();
+
 /* =========================================================================
    STATE & SPACED REPETITION
    ========================================================================= */
@@ -972,10 +1514,11 @@ const STORAGE_KEY = 'aa-profile-builder-v1';
 
 const state = {
   /* per-AA stats */
+  mode: 'study',      // 'study' | 'test'
   history: {},        // letter -> { weight, attempts, correct, streak }
   streak: 0,          // current consecutive perfect rounds
   bestStreak: 0,
-  current: null,      // current AA object
+  current: null,      // current AA object (test mode)
   placed: { letter: null, structure: null, pkr: null },
   bank: [],           // tile descriptors
   validated: false    // if current round has been checked
@@ -993,6 +1536,7 @@ function loadState() {
       if (data && typeof data === 'object') {
         state.history = data.history || {};
         state.bestStreak = data.bestStreak || 0;
+        if (data.mode === 'study' || data.mode === 'test') state.mode = data.mode;
       }
     }
   } catch (e) { /* ignore */ }
@@ -1006,7 +1550,8 @@ function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       history: state.history,
-      bestStreak: state.bestStreak
+      bestStreak: state.bestStreak,
+      mode: state.mode
     }));
   } catch (e) { /* ignore quota errors */ }
 }
@@ -1339,49 +1884,18 @@ function checkAnswer() {
   } else {
     state.streak = 0;
     saveState();
-    const wrongList = ['letter','structure','pkr'].filter(t => !checks[t]).map(t => {
-      if (t === 'letter') return '1-letter';
-      if (t === 'structure') return 'structure';
-      return 'pKr';
-    }).join(' • ');
-    showFeedback(false, 'Not quite — try again', wrongList + ' was off');
     state.validated = true;
-    els.checkBtn.textContent = 'Show Answer →';
-    els.checkBtn.disabled = false;
+    els.checkBtn.disabled = true;
+    // Let the red-shake animation play, then open the review modal with the memory hook.
+    setTimeout(() => openMasterCard(target, { isReview: true, userChecks: checks }), 650);
   }
   updateStatsDisplay();
-}
-
-function revealAndNext() {
-  // After a wrong answer, "Show Answer" reveals correct values then advances
-  const target = state.current;
-
-  // Find correct tiles in bank and place them where missing/wrong
-  const correctTiles = {
-    letter: state.bank.find(t => t.type === 'letter' && t.value === target.letter),
-    structure: state.bank.find(t => t.type === 'structure' && t.value === target.letter),
-    pkr: state.bank.find(t => t.type === 'pkr' && t.value === target.pkr)
-  };
-  for (const slot of ['letter','structure','pkr']) {
-    const zone = document.querySelector(`.drop-zone[data-type="${slot}"]`);
-    zone.classList.remove('correct','incorrect','filled');
-    zone.classList.add('correct');
-    const t = correctTiles[slot];
-    if (t) zone.querySelector('.drop-zone-content').innerHTML = tileInner(t);
-  }
-  els.checkBtn.textContent = 'Next →';
-  els.checkBtn.disabled = false;
-  // mark as 'reveal' state
-  state.validated = 'revealed';
 }
 
 function onCheckClick() {
   if (!state.validated) {
     checkAnswer();
-  } else if (state.validated === true && els.checkBtn.textContent.includes('Show')) {
-    revealAndNext();
   } else {
-    // Next round; pass current to avoid immediate repeat
     newRound(state.current);
   }
 }
@@ -1405,14 +1919,201 @@ function updateStatsDisplay() {
 }
 
 /* =========================================================================
+   STUDY MODE — render family-grouped cards
+   ========================================================================= */
+function renderStudyMode() {
+  const container = document.getElementById('familiesContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const fam of FAMILIES) {
+    const section = document.createElement('section');
+    section.className = 'family';
+    section.style.setProperty('--family-color', fam.color);
+    section.innerHTML = `
+      <header class="family-header">
+        <div>
+          <span class="family-pill">${fam.title}</span>
+          <p class="family-subtitle">${fam.subtitle}</p>
+        </div>
+        <span class="family-count">${fam.members.length} AAs</span>
+      </header>
+      <div class="family-members"></div>
+    `;
+    const grid = section.querySelector('.family-members');
+    for (const letter of fam.members) {
+      const aa = AA_BY_LETTER[letter];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'member-card';
+      btn.dataset.letter = letter;
+      btn.setAttribute('aria-label', `Open memory card for ${aa.name}`);
+      btn.innerHTML = `
+        <div class="member-card-svg" aria-hidden="true">${STRUCTURES[letter]}</div>
+        <div class="member-card-three">${aa.three}</div>
+        <span class="member-card-one">${aa.letter}</span>
+      `;
+      btn.addEventListener('click', () => openMasterCard(aa));
+      grid.appendChild(btn);
+    }
+    container.appendChild(section);
+  }
+}
+
+/* =========================================================================
+   MODE SWITCHING
+   ========================================================================= */
+function switchMode(mode) {
+  if (mode !== 'study' && mode !== 'test') return;
+  if (state.mode === mode) return;
+  state.mode = mode;
+  saveState();
+
+  // Toggle visible sections
+  document.getElementById('studyMode').hidden = (mode !== 'study');
+  document.getElementById('testMode').hidden = (mode !== 'test');
+
+  // Update toggle UI
+  const wrap = document.querySelector('.mode-toggle');
+  wrap.dataset.active = mode;
+  wrap.querySelectorAll('.mode-btn').forEach(b => {
+    b.setAttribute('aria-selected', b.dataset.mode === mode ? 'true' : 'false');
+  });
+
+  // Close any open modal when switching
+  closeModal();
+}
+
+/* =========================================================================
+   MASTER CARD MODAL
+   ========================================================================= */
+function correctTileMarkup(aa) {
+  const structure = STRUCTURES[aa.letter];
+  const pkrInner = aa.pkr === 'N/A'
+    ? `<div class="tile-pkr-na">N / A</div>`
+    : `<div class="tile-pkr">${aa.pkr}</div>`;
+  return `
+    <div class="mc-correct-tile-row">
+      <div class="mc-correct-tile">
+        <div class="mc-correct-tile-label">1-Letter</div>
+        <div class="tile-letter">${aa.letter}</div>
+      </div>
+      <div class="mc-correct-tile">
+        <div class="mc-correct-tile-label">Structure</div>
+        <div class="tile-structure">${structure}</div>
+      </div>
+      <div class="mc-correct-tile">
+        <div class="mc-correct-tile-label">pKr</div>
+        ${pkrInner}
+      </div>
+    </div>
+  `;
+}
+
+function openMasterCard(aa, options = {}) {
+  const { isReview = false } = options;
+  const fam = FAMILY_BY_LETTER[aa.letter];
+  const modal = document.getElementById('modal');
+  const card = document.getElementById('modalCard');
+
+  card.style.setProperty('--family-color', fam.color);
+
+  const pkrValueHTML = aa.pkr === 'N/A'
+    ? `<span class="mc-pkr-value na">N / A</span>`
+    : `<span class="mc-pkr-value">≈ ${aa.pkr}</span>`;
+
+  card.innerHTML = `
+    <button class="modal-close" id="modalClose" type="button" aria-label="Close">✕</button>
+    ${isReview ? `<div class="mc-review-banner">Review — let's lock this in</div>` : ''}
+    <div class="mc-name" id="modalName">${aa.name}</div>
+    <div class="mc-codes">
+      <span class="mc-three">${aa.three}</span>
+      <span class="mc-dot">•</span>
+      <span class="mc-one">${aa.letter}</span>
+    </div>
+    <div class="mc-family-tag">${fam.title}</div>
+    ${isReview ? correctTileMarkup(aa) : `
+      <div class="mc-structure-frame">${STRUCTURES[aa.letter]}</div>
+      <div class="mc-pkr-row">
+        <span class="mc-pkr-label">pKr (side chain)</span>
+        ${pkrValueHTML}
+      </div>
+    `}
+    <div class="mc-mnemonic">
+      <div class="mc-mnemonic-label">🧠 Memory Hook</div>
+      <div class="mc-mnemonic-text">${MNEMONICS[aa.letter]}</div>
+    </div>
+    ${isReview ? `<button class="mc-action-btn" id="modalAction" type="button">Continue →</button>` : ''}
+  `;
+
+  modal.dataset.context = isReview ? 'review' : 'study';
+  modal.hidden = false;
+  // Force reflow then add show class for transition
+  void modal.offsetWidth;
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('modalClose').addEventListener('click', () => closeModal());
+  const actionBtn = document.getElementById('modalAction');
+  if (actionBtn) actionBtn.addEventListener('click', () => closeModal());
+
+  // Focus the action button if present, else the close button
+  setTimeout(() => {
+    const focusEl = actionBtn || document.getElementById('modalClose');
+    if (focusEl) focusEl.focus();
+  }, 60);
+}
+
+function closeModal() {
+  const modal = document.getElementById('modal');
+  if (modal.hidden) return;
+  const wasReview = modal.dataset.context === 'review';
+  modal.classList.remove('show');
+  document.body.style.overflow = '';
+  setTimeout(() => {
+    modal.hidden = true;
+    modal.dataset.context = '';
+    // After a wrong-answer review, automatically advance to next round
+    if (wasReview && state.mode === 'test') {
+      newRound(state.current);
+    }
+  }, 280);
+}
+
+/* =========================================================================
    INIT
    ========================================================================= */
 function init() {
   loadState();
+
+  // Render study mode content (always populated, just may be hidden)
+  renderStudyMode();
+
+  // Wire mode toggle
+  const toggle = document.querySelector('.mode-toggle');
+  toggle.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+  // Apply initial mode (loaded from storage or default 'study')
+  toggle.dataset.active = state.mode;
+  toggle.querySelectorAll('.mode-btn').forEach(b => {
+    b.setAttribute('aria-selected', b.dataset.mode === state.mode ? 'true' : 'false');
+  });
+  document.getElementById('studyMode').hidden = (state.mode !== 'study');
+  document.getElementById('testMode').hidden = (state.mode !== 'test');
+
+  // Modal: dismiss on backdrop click and Escape
+  const modal = document.getElementById('modal');
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  // Test-mode bindings
   document.querySelectorAll('.drop-zone').forEach(bindZoneTap);
   els.checkBtn.addEventListener('click', onCheckClick);
   els.skipBtn.addEventListener('click', () => {
-    // skip = soft penalty, mark as a wrong attempt to keep AA in rotation
     if (state.current && !state.validated) {
       const s = state.history[state.current.letter];
       s.weight = Math.min(4.0, s.weight + 0.6);
@@ -1430,6 +2131,7 @@ function init() {
     saveState();
     newRound();
   });
+
   newRound();
 }
 
