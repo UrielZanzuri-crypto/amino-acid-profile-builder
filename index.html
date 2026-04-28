@@ -243,15 +243,32 @@
     border-radius: 2px;
   }
 
-  /* Drop zones */
+  /* Drop zones — 4 zones: structure spans full top row, others share row below */
   .drop-zones {
     display: grid;
-    grid-template-columns: 0.85fr 1.4fr 1fr;
+    grid-template-columns: 1fr 1fr 1.3fr;
+    grid-template-areas:
+      "structure structure structure"
+      "letter    pkr       family";
     gap: 10px;
   }
+  .drop-zone[data-type="structure"] { grid-area: structure; min-height: 130px; }
+  .drop-zone[data-type="letter"]    { grid-area: letter; }
+  .drop-zone[data-type="pkr"]       { grid-area: pkr; }
+  .drop-zone[data-type="family"]    { grid-area: family; }
   @media (max-width: 620px) {
-    .drop-zones { grid-template-columns: 1fr 1fr; }
-    .drop-zones .drop-zone[data-type="structure"] { grid-column: 1 / -1; order: -1; }
+    /* 2x2 grid on mobile: structure spans top row, letter+pkr in row 2, family spans row 3 */
+    .drop-zones {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "structure structure"
+        "letter    pkr"
+        "family    family";
+      gap: 8px;
+    }
+    .drop-zone { min-height: 96px; padding: 8px 10px 10px; }
+    .drop-zone[data-type="structure"] { min-height: 120px; }
+    .drop-zone[data-type="family"]    { min-height: 80px; }
   }
   .drop-zone {
     background: var(--glass);
@@ -426,12 +443,47 @@
   .tile-structure { width: 100%; height: 56px; display: grid; place-items: center; color: var(--text); }
   .tile-structure svg { width: 100%; height: 100%; max-width: 130px; }
 
+  /* Family tile — uses --family-color custom property set on the element */
+  .tile-family {
+    --family-color: var(--cyan);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0 4px;
+    text-align: center;
+  }
+  .tile-family-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--family-color);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+  }
+  .tile-family-sub {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
   /* Drop zone shows tile content scaled up */
   .drop-zone .tile-letter { font-size: 38px; }
   .drop-zone .tile-pkr { font-size: 22px; }
   .drop-zone .tile-pkr-na { font-size: 15px; }
   .drop-zone .tile-structure { height: 70px; }
   .drop-zone .tile-structure svg { max-width: 200px; }
+  .drop-zone .tile-family-name { font-size: 13px; }
+  .drop-zone .tile-family-sub { font-size: 10px; }
+  @media (max-width: 620px) {
+    .drop-zone .tile-letter { font-size: 32px; }
+    .drop-zone .tile-pkr { font-size: 19px; }
+    .drop-zone .tile-pkr-na { font-size: 13px; }
+    .drop-zone .tile-family-name { font-size: 11px; }
+  }
 
   /* Drag clone — floating element while moving */
   .drag-clone {
@@ -991,6 +1043,10 @@
     gap: 8px;
     margin-bottom: 14px;
   }
+  /* Four-tile variant for the test-mode review modal — 2x2 grid */
+  .mc-correct-tile-row--four {
+    grid-template-columns: 1fr 1fr;
+  }
   .mc-correct-tile {
     background: rgba(52, 211, 153, 0.10);
     border: 1px solid rgba(52, 211, 153, 0.4);
@@ -1016,6 +1072,8 @@
   .mc-correct-tile .tile-pkr { font-size: 16px; }
   .mc-correct-tile .tile-pkr-na { font-size: 12px; }
   .mc-correct-tile .tile-structure { height: 36px; }
+  .mc-correct-tile .tile-family-name { font-size: 11px; }
+  .mc-correct-tile .tile-family-sub { font-size: 8.5px; }
 
 </style>
 </head>
@@ -1087,12 +1145,16 @@
       <div class="drop-zone-label">pKr Value</div>
       <div class="drop-zone-content"><span class="drop-zone-placeholder">?</span></div>
     </div>
+    <div class="drop-zone" data-type="family">
+      <div class="drop-zone-label">Family</div>
+      <div class="drop-zone-content"><span class="drop-zone-placeholder">?</span></div>
+    </div>
   </section>
 
   <section class="bank" aria-label="Tile bank">
     <div class="bank-header">
       <div class="bank-title">Drag tiles into the profile</div>
-      <div class="bank-hint" id="bankHint">9 tiles • 3 correct</div>
+      <div class="bank-hint" id="bankHint">14 tiles • 4 correct</div>
     </div>
     <div class="tiles-grid" id="bank"></div>
   </section>
@@ -1454,7 +1516,7 @@ const MNEMONICS = {
   T: "T for Threonine — Three substituents on its β-carbon (OH, CH₃, H). The β-OH makes Thr a phosphorylation site like Ser.",
   C: "C for Cysteine — 'See SH'. The only amino acid with a thiol; two cysteines link via disulfide bridges (—S—S—) to lock protein structure in place.",
   N: "N for Asparagine — N because the side chain ends in a Nitrogen amide (—CONH₂). N-linked glycosylation happens here. Asn is the amide of Asp.",
-  Q: "Q for Glutamine — pronounced 'Q-tamine'. Q sits right after N in the alphabet, just as Gln is one CH₂ longer than Asn. The body's main nitrogen carrier in blood.",
+  Q: "Q for Glutamine — say 'Q-tamine' (cute-amine). Visually, Q is a 'bigger' letter than N — a circle with a tail — which mirrors the structure: Gln is just Asn with one extra CH₂ in the side chain. The body's main nitrogen carrier in blood.",
   D: "D for aspartate — D is for 'aciDic'. Asp and Asn look like twins (same backbone), but D ends in —COO⁻ while N ends in —CONH₂. Pair: D = acid, N = amide.",
   E: "E for glutamatE — E follows D in the alphabet, just like Glu is one CH₂ longer than Asp. E also stands for Excitatory: Glu is the brain's main excitatory neurotransmitter.",
   K: "K for Lysine — K's long diagonal arms mirror Lys's long 4-CH₂ tail tipped with NH₃⁺. Lysine 'Kicks' out positive charge and is the prime target for histone acetylation/methylation.",
@@ -1519,7 +1581,7 @@ const state = {
   streak: 0,          // current consecutive perfect rounds
   bestStreak: 0,
   current: null,      // current AA object (test mode)
-  placed: { letter: null, structure: null, pkr: null },
+  placed: { letter: null, structure: null, pkr: null, family: null },
   bank: [],           // tile descriptors
   validated: false    // if current round has been checked
 };
@@ -1628,6 +1690,17 @@ function generateBank(target) {
   wrongPkrs.forEach((p, i) => {
     tiles.push({ id: 't-p-' + i + '-d', type: 'pkr', value: p, isCorrect: false });
   });
+  // Family — include all 5 families (1 correct + 4 distractors). Use family.id as the value.
+  const correctFamily = FAMILY_BY_LETTER[target.letter];
+  for (const fam of FAMILIES) {
+    tiles.push({
+      id: 't-f-' + fam.id,
+      type: 'family',
+      value: fam.id,
+      family: fam,
+      isCorrect: fam.id === correctFamily.id
+    });
+  }
 
   return shuffle(tiles);
 }
@@ -1663,6 +1736,17 @@ function tileInner(tile) {
     if (tile.value === 'N/A') return `<div class="tile-pkr-na">N / A</div>`;
     return `<div class="tile-pkr">${tile.value}</div>`;
   }
+  if (tile.type === 'family') {
+    const fam = tile.family;
+    // Split title on em-dash for nicer two-line layout when the family has a charge qualifier
+    const parts = fam.title.split(' — ');
+    const main = parts[0];
+    const sub = parts[1] || '';
+    return `<div class="tile-family" style="--family-color: ${fam.color}">
+      <div class="tile-family-name">${main}</div>
+      ${sub ? `<div class="tile-family-sub">${sub}</div>` : ''}
+    </div>`;
+  }
   return '';
 }
 
@@ -1694,7 +1778,7 @@ function placeIntoZone(tileEl, zone) {
   if (!tile) return;
 
   // If this tile is already in another slot, free that slot first
-  for (const slot of ['letter','structure','pkr']) {
+  for (const slot of ['letter','structure','pkr','family']) {
     if (state.placed[slot] && state.placed[slot].id === tileId) {
       state.placed[slot] = null;
       const oldZone = document.querySelector(`.drop-zone[data-type="${slot}"]`);
@@ -1735,11 +1819,11 @@ function removeFromZone(zone) {
 }
 
 function updateCheckButton() {
-  const filled = state.placed.letter && state.placed.structure && state.placed.pkr;
+  const filled = state.placed.letter && state.placed.structure && state.placed.pkr && state.placed.family;
   els.checkBtn.disabled = !filled || state.validated;
-  // Update progress bar (1/3, 2/3, 3/3)
-  const filledCount = ['letter','structure','pkr'].filter(k => state.placed[k]).length;
-  els.progressBar.style.width = (filledCount / 3 * 100) + '%';
+  // Update progress bar (1/4 ... 4/4)
+  const filledCount = ['letter','structure','pkr','family'].filter(k => state.placed[k]).length;
+  els.progressBar.style.width = (filledCount / 4 * 100) + '%';
 }
 
 /* =========================================================================
@@ -1839,7 +1923,7 @@ function onPointerDown(e) {
    ========================================================================= */
 function newRound(avoid) {
   state.current = pickAA(avoid);
-  state.placed = { letter: null, structure: null, pkr: null };
+  state.placed = { letter: null, structure: null, pkr: null, family: null };
   state.validated = false;
   state.bank = generateBank(state.current);
 
@@ -1857,15 +1941,17 @@ function newRound(avoid) {
 function checkAnswer() {
   if (state.validated) return;
   const target = state.current;
+  const correctFamilyId = FAMILY_BY_LETTER[target.letter].id;
   const checks = {
     letter:    state.placed.letter    && state.placed.letter.value === target.letter,
     structure: state.placed.structure && state.placed.structure.value === target.letter, // structure tile.value stores the source letter
-    pkr:       state.placed.pkr       && state.placed.pkr.value === target.pkr
+    pkr:       state.placed.pkr       && state.placed.pkr.value === target.pkr,
+    family:    state.placed.family    && state.placed.family.value === correctFamilyId
   };
-  const allCorrect = checks.letter && checks.structure && checks.pkr;
+  const allCorrect = checks.letter && checks.structure && checks.pkr && checks.family;
 
   // Visual feedback per zone
-  for (const t of ['letter','structure','pkr']) {
+  for (const t of ['letter','structure','pkr','family']) {
     const zone = document.querySelector(`.drop-zone[data-type="${t}"]`);
     zone.classList.remove('correct','incorrect');
     zone.classList.add(checks[t] ? 'correct' : 'incorrect');
@@ -1991,8 +2077,12 @@ function correctTileMarkup(aa) {
   const pkrInner = aa.pkr === 'N/A'
     ? `<div class="tile-pkr-na">N / A</div>`
     : `<div class="tile-pkr">${aa.pkr}</div>`;
+  const fam = FAMILY_BY_LETTER[aa.letter];
+  const famParts = fam.title.split(' — ');
+  const famMain = famParts[0];
+  const famSub = famParts[1] || '';
   return `
-    <div class="mc-correct-tile-row">
+    <div class="mc-correct-tile-row mc-correct-tile-row--four">
       <div class="mc-correct-tile">
         <div class="mc-correct-tile-label">1-Letter</div>
         <div class="tile-letter">${aa.letter}</div>
@@ -2004,6 +2094,13 @@ function correctTileMarkup(aa) {
       <div class="mc-correct-tile">
         <div class="mc-correct-tile-label">pKr</div>
         ${pkrInner}
+      </div>
+      <div class="mc-correct-tile">
+        <div class="mc-correct-tile-label">Family</div>
+        <div class="tile-family" style="--family-color: ${fam.color}">
+          <div class="tile-family-name">${famMain}</div>
+          ${famSub ? `<div class="tile-family-sub">${famSub}</div>` : ''}
+        </div>
       </div>
     </div>
   `;
